@@ -30,6 +30,7 @@ class Exporter(ExporterSubcommandPlugin):
         x = VIZExporter()
         x.export(
             top_node,
-            sv_flag=options.sv,
-            tlv_flag=options.tlv
+            options.output,
+            sv_flag = options.sv,
+            tlv_flag = options.tlv
         )

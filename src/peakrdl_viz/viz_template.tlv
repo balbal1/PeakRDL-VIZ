@@ -1,13 +1,33 @@
 \m5_TLV_version 1d: tl-x.org
-\SV
 {% raw %}{% endraw %}
 {%- if package_content %}
+\SV
+{% raw %}{% endraw %}
 {{ package_content }}
 {%- endif %}{% raw %}
-\TLV ff(/_ff, _register, _field, #_index, #_x, #_y)
+\TLV reg(/_reg, _register, #_index, #_x, #_y, #_width, #_height, _color)
+   /_reg
+      \viz_js
+         box: {width: #_width, height: #_height, strokeWidth: 1},
+         init() {
+            let ret = {}
+            ret.label = new fabric.Text("", {
+               left: 0, top: -15,
+               fontSize: 12, fontFamily: "Courier New",
+            })
+            return ret
+         },
+         renderFill() {
+            let objs = this.getObjects()
+            objs.label.set({text: `${_register}`})
+            return `#_color`
+         },
+         where: {left: #_x, top: #_y}
+
+\TLV ff(/_ff, _path, _field, #_index, #_x, #_y, #_width, #_height, _color)
    /_ff
       \viz_js
-         box: {width: 50, height: 40, strokeWidth: 1},
+         box: {width: #_width, height: #_height, strokeWidth: 1},
          init() {
             let ret = {}
             ret.bit = new fabric.Text("", {
@@ -20,15 +40,25 @@
             })
             return ret
          },
-         render() {
+         renderFill() {
             let objs = this.getObjects()
-            {% endraw %}let field = this.sigVal(`{{ module_name }}.field_storage.${_register}.${_field}.value`){% raw %}
+            {% endraw %}let field = this.sigVal(`{{ module_name }}.field_storage.${_path}.value`){% raw %}
             objs.bit.set({text: field.getValue()[#_index]})
             objs.label.set({text: `${_field}[${#_index}]`})
-            return []
+            return `#_color`
          },
-         where: {left: #_x * 50, top: #_y*80}
+         where: {left: #_x, top: #_y}
+
+\TLV empty_ff(/_ff, #_x, #_y, #_width, #_height)
+   /_ff
+      \viz_js
+         box: {width: #_width, height: #_height, strokeWidth: 1},
+         renderFill() {
+            return `#AAAAAA`
+         },
+         where: {left: #_x, top: #_y}
 {% endraw %}
+{%- if module_content %}
 // ---
 // Top
 // ---
@@ -43,8 +73,11 @@
    $reset = *reset;
 
    {{ module_name }} {{ module_name }}($clk, $reset, $s_apb_psel, $s_apb_penable, $s_apb_pwrite, $s_apb_paddr, $s_apb_pwdata, $s_apb_pready, $s_apb_prdata, $s_apb_pslverr, *hwif_in, *hwif_out);
-
-{{ff.get_flip_flops()}}
+{% else %}
+\TLV
+{%- endif %}
+{{ff.get_all_lines()}}
+{%- if module_content %}
 
    *passed = *cyc_cnt > 20;
    *failed = 1'b0;
@@ -52,6 +85,5 @@
 \SV
 endmodule
 {% raw %}{% endraw %}
-{%- if package_content %}
 {{ module_content }}
 {%- endif %}{# (eof newline anchor) #}
