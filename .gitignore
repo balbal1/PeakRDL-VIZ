@@ -1,6 +1,2 @@
 __pycache__
-
-src/peakrdl_viz/temp_files
-src/peakrdl_viz/*.rdl
-src/peakrdl_viz/*.tlv
-!viz_template.tlv
+output_files

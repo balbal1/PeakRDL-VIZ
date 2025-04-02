@@ -4,8 +4,8 @@ This is a draft repo for experimenting with Makerchip VIZ framework and PeakRDL
 
 ## How to use
 
-for a quick test example, use this command:
+for a quick test for the plugin:
 
-```peakrdl --peakrdl-cfg my_config.toml viz-exporter <TEST_FILE>.rdl -o none --sv```
+```peakrdl viz-exporter --peakrdl-cfg my_config.toml -o output_files test_files/long_test.rdl --sv```
 
-copy and paste the output .tlv file on makerchip and test
+import the output .tlv file (inside output_files) to makerchip and test

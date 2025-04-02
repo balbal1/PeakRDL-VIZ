@@ -48,7 +48,9 @@ peakrdl = "peakrdl.main:main"
 [peakrdl]
 
 # Paths for Python to search for importable modules
-python_search_paths = [""]
+python_search_paths = [
+    "src/peakrdl_viz/"
+]
 
 # Define entry-point spec for the exporter
 plugins.exporters.viz-exporter = "__peakrdl__:Exporter"
