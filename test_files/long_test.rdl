@@ -1,0 +1,53 @@
+
+addrmap long_test {
+
+    default sw = rw;
+    default hw = rw;
+
+    regfile {
+        default regwidth = 8;
+
+        reg {
+            field {} FIELD1[2:0];
+        } REG1 @ 0x0;
+
+        reg {
+            field {} FIELD1[5:2];
+        } REG2 @ 0x2;
+
+        reg {
+            field {} FIELD1[0:0];
+        } REG3 @ 0x4;
+
+    } REGFILE1;
+
+    regfile {
+        default regwidth = 16;
+
+        reg {
+            field {} FIELD1[15:0];
+        } REG1;
+
+        reg {
+            field {} FIELD1[15:15];
+        } REG2;
+
+        reg {
+            field {} FIELD1[3:2];
+            field {} FIELD2[12:9];
+        } REG3;
+
+    } REGFILE2;
+
+    reg {
+        regwidth = 8;
+        field {} FIELD1[3:0];
+        field {} FIELD2[7:4];
+    } REG1 @ 0x40;
+
+    reg {
+        regwidth = 8;
+        field {} FIELD1[5:3];
+    } REG2 @ 0x44;
+
+};
