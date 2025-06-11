@@ -1,0 +1,150 @@
+
+addrmap viz_test {
+
+    default sw = rw;
+    default hw = rw;
+    default regwidth = 8;
+    default accesswidth = 8;
+
+    regfile {
+        default regwidth = 8;
+
+        reg {
+            field {} FIELD1[2:0];
+            field {} FIELD2[4:3];
+            field {} FIELD3[7:5];
+        } REG1 @ 0x00;
+
+        reg {
+            field {} FIELD1[3:0];
+            field {} FIELD2[5:4];
+            field {} FIELD3[7:7];
+        } REG2 @ 0x01;
+
+        reg {
+            field {
+                sw = rw;
+                hw = r;
+            } FIELD1[0:0];
+            field {
+                sw = rw;
+                hw = na;
+            } FIELD2[1:1];
+            field {
+                sw = r;
+                hw = rw;
+            } FIELD3[2:2];
+            field {
+                sw = r;
+                hw = r;
+                reset = 0;
+            } FIELD4[3:3];
+            field {
+                sw = r;
+                hw = w;
+            } FIELD5[4:4];
+            field {
+                sw = r;
+                hw = na;
+                reset = 0;
+            } FIELD6[5:5];
+            field {
+                sw = w;
+                hw = rw;
+            } FIELD7[6:6];
+            field {
+                sw = w;
+                hw = r;
+            } FIELD8[7:7];
+        } REG3 @ 0x02;
+
+        reg {
+            field {
+                onread = rclr;
+                onwrite = woset;
+            } FIELD1[0:0];
+            field {
+                onread = rclr;
+                onwrite = woclr;
+            } FIELD2[1:1];
+            field {
+                onread = rclr;
+                onwrite = wot;
+            } FIELD3[2:2];
+            field {
+                onread = rclr;
+                onwrite = wzs;
+            } FIELD4[3:3];
+            field {
+                onread = rset;
+                onwrite = wzc;
+            } FIELD5[4:4];
+            field {
+                onread = rset;
+                onwrite = wzt;
+            } FIELD6[5:5];
+            field {
+                onread = rset;
+                onwrite = wclr;
+            } FIELD7[6:6];
+            field {
+                onread = rset;
+                onwrite = wset;
+            } FIELD8[7:7];
+        } REG4 @ 0x03;
+
+    } REGFILE1 @ 0x00;
+
+    regfile {
+        default regwidth = 16;
+        default accesswidth = 8;
+
+        reg {
+            field {
+                counter = true;
+            } FIELD1[7:0];
+            field {} FIELD2[8:8];
+            field {} FIELD3[9:9];
+            field {
+                counter = true;
+            } FIELD4[15:10];
+        } REG1 @ 0x00;
+
+        reg {
+            field {
+                intr = true;
+            } FIELD1[3:2];
+            field {
+                intr = true;
+            } FIELD2[12:9];
+            field {
+                intr = true;
+            } FIELD3[15:15];
+        } REG2 @ 0x02;
+
+    } REGFILE2 @ 0x04;
+
+    external reg {
+        regwidth = 8;
+        field {} FIELD1[5:3];
+    } REG1 @ 0x08;
+
+    external mem {
+        memwidth = 8;
+        mementries = 2;
+        
+        reg {
+            regwidth = 8;
+            field {} FIELD1[1:0];
+            field {} FIELD2[7:4];
+        } REG1 @ 0x00;
+        reg {
+            regwidth = 8;
+            field {} FIELD1[0:0];
+            field {} FIELD1[2:2];
+            field {} FIELD1[7:3];
+        } REG2 @ 0x01;
+        
+    } MEM1 @ 0x0A;
+
+};
