@@ -10,12 +10,14 @@ addrmap viz_test {
         default regwidth = 8;
 
         reg {
+            default we;
             field {} FIELD1[2:0];
             field {} FIELD2[4:3];
             field {} FIELD3[7:5];
         } REG1 @ 0x00;
 
         reg {
+            default we;
             field {} FIELD1[3:0];
             field {} FIELD2[5:4];
             field {} FIELD3[7:7];
@@ -59,6 +61,7 @@ addrmap viz_test {
         } REG3 @ 0x02;
 
         reg {
+            default we;
             field {
                 onread = rclr;
                 onwrite = woset;
@@ -100,6 +103,7 @@ addrmap viz_test {
         default accesswidth = 8;
 
         reg {
+            default we;
             field {
                 counter = true;
             } FIELD1[7:0];
@@ -111,6 +115,7 @@ addrmap viz_test {
         } REG1 @ 0x00;
 
         reg {
+            default we;
             field {
                 intr = true;
             } FIELD1[3:2];
@@ -124,27 +129,28 @@ addrmap viz_test {
 
     } REGFILE2 @ 0x04;
 
-    external reg {
+    reg {
+        default we;
         regwidth = 8;
         field {} FIELD1[5:3];
     } REG1 @ 0x08;
 
-    external mem {
-        memwidth = 8;
-        mementries = 2;
+    // external mem {
+    //     memwidth = 8;
+    //     mementries = 2;
         
-        reg {
-            regwidth = 8;
-            field {} FIELD1[1:0];
-            field {} FIELD2[7:4];
-        } REG1 @ 0x00;
-        reg {
-            regwidth = 8;
-            field {} FIELD1[0:0];
-            field {} FIELD1[2:2];
-            field {} FIELD1[7:3];
-        } REG2 @ 0x01;
+    //     reg {
+    //         regwidth = 8;
+    //         field {} FIELD1[1:0];
+    //         field {} FIELD2[7:4];
+    //     } REG1 @ 0x00;
+    //     reg {
+    //         regwidth = 8;
+    //         field {} FIELD1[0:0];
+    //         field {} FIELD2[2:2];
+    //         field {} FIELD3[7:3];
+    //     } REG2 @ 0x01;
         
-    } MEM1 @ 0x0A;
+    // } MEM1 @ 0x0A;
 
 };
