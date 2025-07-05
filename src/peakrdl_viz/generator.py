@@ -1,3 +1,4 @@
+import math
 import os
 import jinja2 as jj
 
@@ -53,7 +54,7 @@ class GenerateFieldsVIZ(RDLListener):
 
         self.lines: list[str] = []
         self.reg_base_address: int
-        self.code_indent: int = 3
+        self.code_indent: int = 6
         self.field_template = self.jj_env.get_template("templates/field_template.tlv")
         self.register_template = self.jj_env.get_template("templates/register_template.tlv")
         self.module_name = module_name
@@ -65,15 +66,24 @@ class GenerateFieldsVIZ(RDLListener):
 
     def enter_Reg(self, node) -> None:
         self.reg_base_address = node.absolute_address
+        fields_array = []
+        for field in reversed(node.fields(include_gaps=True)):
+            if isinstance(field, FieldNode):
+                fields_array.append(f"/{field.get_path_segment().lower()}$field_value")
+            else:
+                fields_array.append(f"{field[0] - field[1] + 1}'b{'0' * (field[0] - field[1] + 1)}")
+        concat_fields = "{" + ', '.join(fields_array) + "}"
         context = {
             "name": node.get_path_segment(),
             "path": ".".join(node.get_path_segments()[1:]),
             "module_name": self.module_name,
             "indent": self.code_indent,
             "register_size": node.size * 8,
-            "height": 80 * node.size - 30,
-            "left": 500,
-            "top": self.reg_base_address * 80 + 10,
+            "access_width": self.access_width,
+            "no_of_words": math.ceil(node.size * 8 / self.access_width),
+            "concat_fields": concat_fields,
+            "height": math.ceil(node.size * 8 / self.access_width) * 80 - 30,
+            "top": (self.reg_base_address * 8 // self.access_width) * 80 + 10,
         }
         stream = self.register_template.render(context).strip('\n')
         self.lines.append(stream)
@@ -87,12 +97,13 @@ class GenerateFieldsVIZ(RDLListener):
             "indent": self.code_indent,
             "field_size": field_size,
             "label_font_size": 8 if field_size == 1 else 12,
-            "value_font_size": 14 if field_size == 1 else 16,
-            "radix": "b" if field_size < 4 else "h",
+            "value_font_size": 18 if field_size == 1 else 16,
+            "radix": f"{field_size}''h" if field_size > 3 else f"{field_size}''b" if field_size > 1 else "",
             "radix_long": "Binary" if field_size < 4 else "Hex",
             "width": field_size * 50,
-            "left": (self.access_width - (node.high % self.access_width) - 1) * 50,
-            "top": (node.high // self.access_width) * 80,
+            "implements_storage": node.implements_storage,
+            "left": (self.access_width - (node.high % self.access_width) - 1) * 50 + 120,
+            "top": (node.high // self.access_width) * 80 - 10,
         }
 
         stream = self.field_template.render(context).strip('\n')

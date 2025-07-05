@@ -1,31 +1,14 @@
 {% filter indent(width=indent) %}
+$register_value[{{register_size-1}}:0] = {{concat_fields}};
 \viz_js
-   box: {width: 90, height: {{height}}, strokeWidth: 1},
+   box: {strokeWidth: 0},
    init() {
-      ret = {}
-      ret.label = new fabric.Text("", {
-            top: {{height}}/2-10,
-            left: 45,
-            originX: "center",
-            originY: "center",
-            fontFamily: "monospace",
-            fontSize: 12
-      })
-      ret.value = new fabric.Text("", {
-            top: {{height}}/2+10,
-            left: 45,
-            originX: "center",
-            originY: "center",
-            fontFamily: "monospace",
-            fontSize: 12
-      })
-      return ret
+      return '/top_viz'.init_register({{height}}, {{no_of_words}}, {{access_width}})
    },
-   renderFill() {
+   render() {
       let obj = this.getObjects()
       obj.label.set({fill: "black", text: "{{name}}"})
-      obj.value.set({fill: "black", text: "{{register_size}}''h" + "0"})
-      return `#F5A7A6`
+      obj.value.set({fill: "black", text: "{{register_size}}''h" + '$register_value'.asHexStr()})
    },
-   where: {left: 450, top: {{top}}}
+   where: {left: 0, top: {{top}}}
 {% endfilter %}
