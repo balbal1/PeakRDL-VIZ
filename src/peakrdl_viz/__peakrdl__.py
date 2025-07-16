@@ -1,8 +1,8 @@
 from typing import TYPE_CHECKING
 
 from peakrdl.plugins.exporter import ExporterSubcommandPlugin
-from exporter import VIZExporter
-from peakrdl_regblock.udps import ALL_UDPS
+
+from .exporter import VIZExporter
 
 if TYPE_CHECKING:
     import argparse
@@ -10,14 +10,21 @@ if TYPE_CHECKING:
 
 class Exporter(ExporterSubcommandPlugin):
     short_desc = "Generate a VIZ model for control/status register (CSR) visualization"
-
-    udp_definitions = ALL_UDPS
-
+    
     def add_exporter_arguments(self, arg_group: 'argparse.ArgumentParser') -> None:
+
         arg_group.add_argument(
-            "--sv",
-            action="store_true", 
-            help="export System Verilog module with output"
+            "--sv-module",
+            metavar="NAME",
+            default=None,
+            help="SystemVerilog module file path"
+        )
+
+        arg_group.add_argument(
+            "--sv-package",
+            metavar="NAME",
+            default=None,
+            help="SystemVerilog package file path"
         )
 
         arg_group.add_argument(
@@ -31,6 +38,7 @@ class Exporter(ExporterSubcommandPlugin):
         x.export(
             top_node,
             options.output,
-            sv_flag = options.sv,
+            sv_module = options.sv_module,
+            sv_package = options.sv_package,
             tlv_flag = options.tlv
         )

@@ -1,2 +1,5 @@
 __pycache__
+dist
+*.egg-info
 output_files
+dev.toml
