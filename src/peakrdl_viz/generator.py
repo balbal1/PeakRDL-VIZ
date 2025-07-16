@@ -1,116 +1,56 @@
-import math
-import os
 import jinja2 as jj
 
 from systemrdl.node import AddressableNode, RootNode, Node
 from systemrdl.node import AddrmapNode, MemNode
 from systemrdl.node import RegNode, RegfileNode, FieldNode
-from systemrdl import RDLCompiler, RDLCompileError, RDLWalker, RDLListener
+from systemrdl import RDLListener
 
 class GenerateFieldsVIZ(RDLListener):
 
-    FF_WIDTH: int = 50
-    FF_HEIGHT: int = 40
-    X_INDENT: int = 20
-    Y_INDENT: int = 10
-    SPACING: int = 20
-    TEXT_HEIGHT: int = 15
-
-    COLOR_CODES = {
-        AddrmapNode: "D0E4EE",
-        MemNode: "D5D1E9",
-        RegfileNode: "F5CF9F",
-        RegNode: "F5A7A6",
-        FieldNode: "F3F5A9",
-        "blank": "AAAAAA"
-    }
-
-    def __init__(self, module_name, access_width) -> None:
-        self.reg_lines: list[str] = []
-        self.ff_lines: list[str] = []
-        
-        self.x_pointer: int = 0
-        self.y_pointer: int = 0
-
-        # stores the starting x and y positions of parent blocks
-        self.x_stack: list[int] = [0]
-        self.y_stack: list[int] = [0]
-        self.width_stack: list[int] = [0]
-
-        self.ff_visited: list[int] = []
-
-
-        loader = jj.ChoiceLoader([
-            jj.FileSystemLoader(os.path.dirname(__file__)),
-            jj.PrefixLoader({
-                'base': jj.FileSystemLoader(os.path.dirname(__file__)),
-            }, delimiter=":")
-        ])
-
+    def __init__(self, design_sizer) -> None:
         self.jj_env = jj.Environment(
-            loader=loader,
-            undefined=jj.StrictUndefined,
+            loader = jj.PackageLoader("peakrdl_viz", "templates"),
+            undefined= jj.StrictUndefined,
         )
+        self.field_template = self.jj_env.get_template("field_template.tlv")
+        self.register_template = self.jj_env.get_template("register_template.tlv")
+        self.node_template = self.jj_env.get_template("node_template.tlv")
+
+        self.design_sizer = design_sizer
 
         self.lines: list[str] = []
-        self.reg_base_address: int
-        self.code_indent: int = 6
-        self.field_template = self.jj_env.get_template("templates/field_template.tlv")
-        self.register_template = self.jj_env.get_template("templates/register_template.tlv")
-        self.module_name = module_name
-        self.access_width = access_width
+        self.hw_randomization: list[str] = []
 
     def enter_Component(self, node) -> None:
-        self.lines.append(self.code_indent * ' ' + f'/{node.get_path_segments()[-1].lower()}')
-        self.code_indent += 3
+        scope_line = self.design_sizer.start_scope(node)
+        self.lines.append(scope_line)
+        self.design_sizer.indent()
+
+        if isinstance(node, (AddrmapNode, RegfileNode, MemNode)):
+            context = self.design_sizer.size_node(node)
+            stream = self.node_template.render(context).strip('\n')
+            self.lines.append(stream)
 
     def enter_Reg(self, node) -> None:
-        self.reg_base_address = node.absolute_address
-        fields_array = []
-        for field in reversed(node.fields(include_gaps=True)):
-            if isinstance(field, FieldNode):
-                fields_array.append(f"/{field.get_path_segment().lower()}$field_value")
-            else:
-                fields_array.append(f"{field[0] - field[1] + 1}'b{'0' * (field[0] - field[1] + 1)}")
-        concat_fields = "{" + ', '.join(fields_array) + "}"
-        context = {
-            "name": node.get_path_segment(),
-            "path": ".".join(node.get_path_segments()[1:]),
-            "module_name": self.module_name,
-            "indent": self.code_indent,
-            "register_size": node.size * 8,
-            "access_width": self.access_width,
-            "no_of_words": math.ceil(node.size * 8 / self.access_width),
-            "concat_fields": concat_fields,
-            "height": math.ceil(node.size * 8 / self.access_width) * 80 - 30,
-            "top": (self.reg_base_address * 8 // self.access_width) * 80 + 10,
-        }
+        context = self.design_sizer.size_register(node)
         stream = self.register_template.render(context).strip('\n')
         self.lines.append(stream)
 
     def enter_Field(self, node) -> None:
-        field_size = node.high - node.low + 1
-        context = {
-            "name": node.get_path_segment(),
-            "path": ".".join(node.get_path_segments()[1:]),
-            "module_name": self.module_name,
-            "indent": self.code_indent,
-            "field_size": field_size,
-            "label_font_size": 8 if field_size == 1 else 12,
-            "value_font_size": 18 if field_size == 1 else 16,
-            "radix": f"{field_size}''h" if field_size > 3 else f"{field_size}''b" if field_size > 1 else "",
-            "radix_long": "Binary" if field_size < 4 else "Hex",
-            "width": field_size * 50,
-            "implements_storage": node.implements_storage,
-            "left": (self.access_width - (node.high % self.access_width) - 1) * 50 + 120,
-            "top": (node.high // self.access_width) * 80 - 10,
-        }
-
+        context = self.design_sizer.size_field(node)
         stream = self.field_template.render(context).strip('\n')
         self.lines.append(stream)
 
+        if node.is_hw_writable and node.is_hw_readable and node.is_sw_writable and node.is_sw_readable:
+            field_size = node.high - node.low
+            self.hw_randomization.append(f"   *hwif_in.{'.'.join(node.get_path_segments()[1:])}.next = $rand{len(self.hw_randomization)}{f'[{field_size}:0];' if field_size > 0 else ';'}")
+            self.hw_randomization.append(f"   *hwif_in.{'.'.join(node.get_path_segments()[1:])}.we = $rand{len(self.hw_randomization)};")
+
     def exit_Component(self, node) -> None:
-        self.code_indent -= 3
+        self.design_sizer.outdent()
 
     def get_all_lines(self) -> str:
         return "\n".join(self.lines)
+
+    def get_hw_randomization_lines(self):
+        return "\n".join(self.hw_randomization)

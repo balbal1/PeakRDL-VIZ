@@ -17,53 +17,42 @@
 
 \TLV
    
-   $clk = *clk;
    $reset = *reset;
    $s_apb_pwrite = 1;
 
-   {{ module_name }} {{ module_name }}($clk, $reset, $s_apb_psel, $s_apb_penable, $s_apb_pwrite, $s_apb_paddr[3:0], $s_apb_pwdata[{{access_width-1}}:0], $s_apb_pready, $s_apb_prdata[{{access_width-1}}:0], $s_apb_pslverr, *hwif_in, *hwif_out);
+{{viz_code.get_hw_randomization_lines()}}
+
+   {{ module_name }} {{ module_name }}(*clk, $reset, $s_apb_psel, $s_apb_penable, $s_apb_pwrite, $s_apb_paddr[3:0], $s_apb_pwdata[{{access_width-1}}:0], $s_apb_pready, $s_apb_prdata[{{access_width-1}}:0], $s_apb_pslverr, *hwif_in, *hwif_out);
 
    *passed = *cyc_cnt > 100;
    *failed = 1'b0;
 {% else %}
 \TLV
 {%- endif %}
-   // /table
-   //    \viz_js
-   //       box: {width: {{access_width * 50 + 20}}, height: {{(viz_code.reg_base_address + 1) * 80 + 20}}, strokeWidth: 0},
-   //       renderFill() {
-   //          return `#AAAAAA`
-   //       },
-   //       where: {left: -10, top: -10}
 
    /top_viz
       \viz_js
+         box: {strokeWidth: 0},
          lib: {
-            init_field: (width, label_font_size, value_font_size) => {
+            init_field: (label, value, action) => {
                let ret = {}
                ret.label = new fabric.Text("", {
-                  top: 10,
-                  left: width/2,
+                  ...label,
                   originX: "center",
                   originY: "center",
                   fontFamily: "monospace",
-                  fontSize: label_font_size
                })
                ret.value = new fabric.Text("", {
-                  top: 35,
-                  left: width/2,
+                  ...value,
                   originX: "center",
                   originY: "center",
                   fontFamily: "monospace",
-                  fontSize: value_font_size
                })
                ret.action = new fabric.Text("", {
-                  top: 60,
-                  left: width/2,
+                  ...action,
                   originX: "center",
                   originY: "center",
                   fontFamily: "monospace",
-                  fontSize: label_font_size
                })
                return ret
             },
@@ -73,9 +62,9 @@
                if (load_next) {
                   obj.value.set({fill: "blue"})
                   if (sw_write) {
-                     obj.action.set({fill: "black", text: "sw write"})
+                     obj.action.set({fill: "black", text: "sw wr"})
                   } else {
-                     obj.action.set({fill: "black", text: "hw write"})
+                     obj.action.set({fill: "black", text: "hw wr"})
                   }
                   return `#77DD77`
                } else {
@@ -84,44 +73,53 @@
                   return `#F3F5A9`
                }
             },
-            init_register: (height, no_of_words, access_width) => {
+            init_register: (words, box, label, value) => {
                ret = {}
+               words.forEach((border, index) => {
+                  ret["border" + index] = new fabric.Rect({
+                     ...border,
+                     stroke: "#AAAAAA",
+                     fill: null,
+                  })
+               })
                ret.box = new fabric.Rect({
-                  width: 90,
-                  height: height,
+                  ...box,
+                  strokeWidth: 1,
                   fill: "#F5A7A6",
+                  stroke: "black",
                   rx: 8,
                   ry: 8,
-                  stroke: "black",
-                  strokeWidth: 1,
                })
-               for (let i = 0; i < no_of_words; i++) {
-                  ret["border" + i] = new fabric.Rect({
-                     width: access_width * 50 + 10,
-                     height: 80,
-                     left: 110,
-                     top: i * 80 - 20,
-                     fill: null,
-                     stroke: "#AAAAAA",
-                     strokeWidth: 10
-                  })
-               }
                ret.label = new fabric.Text("", {
-                  top: height/2-10,
-                  left: 45,
+                  ...label,
                   originX: "center",
                   originY: "center",
                   fontFamily: "monospace",
-                  fontSize: 12
                })
                ret.value = new fabric.Text("", {
-                  top: height/2+10,
-                  left: 45,
+                  ...value,
                   originX: "center",
                   originY: "center",
                   fontFamily: "monospace",
-                  fontSize: 12
                })
+               return ret
+            },
+            init_node: (box, label) => {
+               ret = {}
+               ret.box = new fabric.Rect({
+                  ...box,
+                  strokeWidth: 1,
+                  stroke: "black",
+                  rx: 8,
+                  ry: 8,
+               })
+               ret.label = new fabric.Text("", {
+                  ...label,
+                  originX: "center",
+                  originY: "center",
+                  fontFamily: "monospace",
+               })
+               ret.label.rotate(-90)
                return ret
             }
          }

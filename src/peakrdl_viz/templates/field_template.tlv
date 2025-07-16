@@ -2,9 +2,21 @@
 $field_value[{{field_size-1}}:0] = {{module_name}}.field_storage.{{path}}.value;
 $load_next = {{module_name}}.field_combo.{{path}}.load_next;{%- endif %}
 \viz_js
-   box: {width: {{width}}, height: 70, strokeWidth: 1},
+   box: {width: {{width}}, height: {{height}}, strokeWidth: 1},
    init() {
-      return '/top_viz'.init_field({{width}}, {{label_font_size}}, {{value_font_size}})
+      return '/top_viz'.init_field({
+         top: {{label_font_size}},
+         left: {{width/2}},
+         fontSize: {{label_font_size}},
+      }, {
+         top: {{height/2}},
+         left: {{width/2}},
+         fontSize: {{value_font_size}},
+      }, {
+         top: {{height - label_font_size}},
+         left: {{width/2}},
+         fontSize: {{label_font_size}},
+      })
    },
    renderFill() {
       let obj = this.getObjects()

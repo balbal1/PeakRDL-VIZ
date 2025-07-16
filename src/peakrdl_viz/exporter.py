@@ -5,12 +5,10 @@ from typing import Union, Any
 from systemrdl.node import AddressableNode, RootNode, Node
 from systemrdl.node import AddrmapNode, MemNode
 from systemrdl.node import RegNode, RegfileNode, FieldNode
-from systemrdl import RDLCompiler, RDLCompileError, RDLWalker, RDLListener
-from peakrdl_regblock import RegblockExporter
-from peakrdl_regblock.cpuif.apb3 import APB3_Cpuif_flattened
+from systemrdl import RDLWalker
 
-from generator import GenerateFieldsVIZ
-from scan_design import DesignScanner
+from .generator import GenerateFieldsVIZ
+from .design_sizer import DesignSizer
 
 class VIZExporter:
 
@@ -19,21 +17,15 @@ class VIZExporter:
         if kwargs:
             raise TypeError(f"got an unexpected keyword argument '{list(kwargs.keys())[0]}'")
 
-        loader = jj.ChoiceLoader([
-            jj.FileSystemLoader(os.path.dirname(__file__)),
-            jj.PrefixLoader({
-                'base': jj.FileSystemLoader(os.path.dirname(__file__)),
-            }, delimiter=":")
-        ])
-
         self.jj_env = jj.Environment(
-            loader=loader,
-            undefined=jj.StrictUndefined,
+            loader = jj.PackageLoader("peakrdl_viz", "templates"),
+            undefined = jj.StrictUndefined,
         )
 
     def export(self, node: Union[AddrmapNode, RootNode], output_dir: str, **kwargs: Any) -> None:
         
-        sv_flag: bool = kwargs.pop("sv_flag", False)
+        sv_module: str = kwargs.pop("sv_module", None)
+        sv_package: str = kwargs.pop("sv_package", None)
         tlv_flag: bool = kwargs.pop("tlv_flag", False)
 
         module_name: str = node.inst_name
@@ -43,37 +35,43 @@ class VIZExporter:
         if tlv_flag:
             raise NotImplementedError
 
-        if sv_flag:
-            exporter = RegblockExporter()
-            exporter.export(
-                node, f"{output_dir}/temp_files",
-                cpuif_cls=APB3_Cpuif_flattened
-            )
+        if sv_module:
+            try:
+                with open(sv_module, "r") as f:
+                    module_content = f.read()
+            except FileNotFoundError:
+                node.env.msg.fatal("SystemVerilog module file does not exist.")
 
-            with open(f"{output_dir}/temp_files/{module_name}.sv", "r") as f:
-                module_content = f.read()
-
-            with open(f"{output_dir}/temp_files/{module_name}_pkg.sv", "r") as f:
-                package_content = f.read()
+            if sv_package:
+                try:
+                    with open(sv_package, "r") as f:
+                        package_content = f.read()
+                except FileNotFoundError:
+                    node.env.msg.fatal("SystemVerilog package file does not exist.")
+            else:
+                sv_package = sv_module.replace(".sv", "_pkg.sv")
+                try:
+                    with open(sv_package, "r") as f:
+                        package_content = f.read()
+                except FileNotFoundError:
+                    node.env.msg.fatal("SystemVerilog module package file name is not specified.")
         
         walker = RDLWalker(unroll=True)
         
-        scan_listener = DesignScanner()
-        walker.walk(node, scan_listener)
-
-        generate_listener = GenerateFieldsVIZ(module_name, scan_listener.access_width)
+        design_sizer = DesignSizer(node, module_name)
+        generate_listener = GenerateFieldsVIZ(design_sizer)
         walker.walk(node, generate_listener)
 
         context = {
             "module_name": module_name,
-            "access_width": scan_listener.access_width,
+            "access_width": design_sizer.access_width,
             "viz_code": generate_listener,
             "module_content": module_content,
             "package_content": package_content,
         }
 
         # Write out design
-        template = self.jj_env.get_template("templates/viz_template.tlv")
+        template = self.jj_env.get_template("viz_template.tlv")
         stream = template.stream(context)
         stream.dump(f"{output_dir}/{module_name}.tlv")
 
