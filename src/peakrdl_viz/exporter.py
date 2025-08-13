@@ -18,7 +18,7 @@ class VIZExporter:
             raise TypeError(f"got an unexpected keyword argument '{list(kwargs.keys())[0]}'")
 
         self.jj_env = jj.Environment(
-            loader = jj.PackageLoader("peakrdl_viz", "templates"),
+            loader = jj.FileSystemLoader(os.path.dirname(__file__)),
             undefined = jj.StrictUndefined,
         )
 
@@ -40,21 +40,21 @@ class VIZExporter:
                 with open(sv_module, "r") as f:
                     module_content = f.read()
             except FileNotFoundError:
-                node.env.msg.fatal("SystemVerilog module file does not exist.")
+                node.env.msg.fatal("Entered SystemVerilog module file does not exist.")
 
             if sv_package:
                 try:
                     with open(sv_package, "r") as f:
                         package_content = f.read()
                 except FileNotFoundError:
-                    node.env.msg.fatal("SystemVerilog package file does not exist.")
+                    node.env.msg.fatal("Entered SystemVerilog package file does not exist.")
             else:
                 sv_package = sv_module.replace(".sv", "_pkg.sv")
                 try:
                     with open(sv_package, "r") as f:
                         package_content = f.read()
                 except FileNotFoundError:
-                    node.env.msg.fatal("SystemVerilog module package file name is not specified.")
+                    node.env.msg.fatal("couldn't find SystemVerilog package file automatically, please specify the path using --sv-package.")
         
         walker = RDLWalker(unroll=True)
         
@@ -66,12 +66,13 @@ class VIZExporter:
             "module_name": module_name,
             "access_width": design_sizer.access_width,
             "viz_code": generate_listener,
+            "sizes": generate_listener.design_sizer.sizes,
             "module_content": module_content,
             "package_content": package_content,
         }
 
         # Write out design
-        template = self.jj_env.get_template("viz_template.tlv")
+        template = self.jj_env.get_template("templates/viz_template.tlv")
         stream = template.stream(context)
         stream.dump(f"{output_dir}/{module_name}.tlv")
 

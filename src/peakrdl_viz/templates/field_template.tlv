@@ -1,6 +1,8 @@
 {% filter indent(width=indent) %}{%- if implements_storage %}
 $field_value[{{field_size-1}}:0] = {{module_name}}.field_storage.{{path}}.value;
-$load_next = {{module_name}}.field_combo.{{path}}.load_next;{%- endif %}
+$load_next = {{module_name}}.field_combo.{{path}}.load_next;{%- else %}
+$field_value[{{field_size-1}}:0] = 0;
+$load_next = 0;{%- endif %}
 \viz_js
    box: {width: {{width}}, height: {{height}}, strokeWidth: 1},
    init() {

@@ -22,7 +22,7 @@
 
 {{viz_code.get_hw_randomization_lines()}}
 
-   {{ module_name }} {{ module_name }}(*clk, $reset, $s_apb_psel, $s_apb_penable, $s_apb_pwrite, $s_apb_paddr[3:0], $s_apb_pwdata[{{access_width-1}}:0], $s_apb_pready, $s_apb_prdata[{{access_width-1}}:0], $s_apb_pslverr, *hwif_in, *hwif_out);
+   {{ module_name }} {{ module_name }}(*clk, $reset, $s_apb_psel, $s_apb_penable, $s_apb_pwrite, $s_apb_paddr[{{viz_code.design_sizer.max_address}}:0], $s_apb_pwdata[{{access_width-1}}:0], $s_apb_pready, $s_apb_prdata[{{access_width-1}}:0], $s_apb_pslverr, *hwif_in, *hwif_out);
 
    *passed = *cyc_cnt > 100;
    *failed = 1'b0;
@@ -31,6 +31,7 @@
 {%- endif %}
 
    /top_viz
+{{viz_code.get_timeline_lines()}}
       \viz_js
          box: {strokeWidth: 0},
          lib: {
@@ -102,6 +103,92 @@
                   originY: "center",
                   fontFamily: "monospace",
                })
+               return ret
+            },
+            render_register: (obj, name, register_size, register_value, number_of_words, load_nexts, fields, action_signals) => {
+               let create_slot = (slot_top, slot_left, word) => {
+                  let sw_write = action_signals[0].step(1).asInt() & action_signals[1].step(1).asInt()
+                  let action = ""
+                  if (sw_write) {
+                     action = "sw wr"
+                  } else {
+                     action = "hw wr"
+                  }
+                  objects = []
+                  objects.push(new fabric.Rect({
+                     width: {{sizes.timeline_slot_width}},
+                     height: {{sizes.timeline_slot_height}},
+                     left: slot_left,
+                     top: slot_top,
+                     strokeWidth: 1,
+                     fill: "#F3F5A9",
+                     stroke: "#A9AB61",
+                  }))
+                  objects.push(new fabric.Rect({
+                     width: {{sizes.timeline_slot_width}},
+                     height: {{sizes.timeline_slot_height - sizes.timeline_slot_field_height}},
+                     left: slot_left,
+                     top: slot_top + {{sizes.timeline_slot_field_height}},
+                     strokeWidth: 1,
+                     fill: "#F3F5A9",
+                     stroke: "#A9AB61",
+                  }))
+                  objects.push(new fabric.Text(action, {
+                     fontSize: 10,
+                     left: slot_left + {{sizes.timeline_slot_width/2}},
+                     top: slot_top + {{sizes.timeline_slot_field_height + (sizes.timeline_slot_height - sizes.timeline_slot_field_height)/2}},
+                     originX: "center",
+                     originY: "center",
+                     fontFamily: "monospace",
+                  }))
+                  fields[word].forEach((field, index) => {
+                     let value = ""
+                     if (field.width > 3) {
+                        value = `${field.width}h''${field.value.step(1).asHexStr()}`
+                     } else if (field.width > 1) {
+                        value = `${field.width}b''${field.value.step(1).asBinaryStr()}`
+                     } else {
+                        value = field.value.step(1).asBinaryStr()
+                     }
+                     objects.push(new fabric.Rect({
+                        width: field.width * {{sizes.timeline_slot_field_width}},
+                        height: {{sizes.timeline_slot_field_height}},
+                        left: slot_left + field.left * {{sizes.timeline_slot_field_width}},
+                        top: slot_top,
+                        strokeWidth: 1,
+                        fill: "#F3F5A9",
+                        stroke: "#A9AB61",
+                     }))
+                     objects.push(new fabric.Text(value, {
+                        fontSize: 8,
+                        left: slot_left + (field.left + field.width/2) * {{sizes.timeline_slot_field_width}},
+                        top: slot_top + {{sizes.timeline_slot_field_height/2}},
+                        originX: "center",
+                        originY: "center",
+                        fontFamily: "monospace",
+                     }))
+                  });
+                  objects.push(new fabric.Rect({
+                     width: {{sizes.timeline_slot_width}},
+                     height: {{sizes.timeline_slot_height}},
+                     left: slot_left,
+                     top: slot_top,
+                     strokeWidth: 1,
+                     fill: "transparent",
+                     stroke: "black",
+                  }))
+                  return objects
+               }
+               obj.label.set({fill: "black", text: name})
+               obj.value.set({fill: "black", text: `${register_size}''h` + register_value})
+               let ret = []
+               for (let word = 0; word < number_of_words; word++) {
+                  for (let i = 0; i < 51; i++) {
+                     if (load_nexts[word].step(1).asBool()) {
+                        ret.push(...create_slot(word * {{sizes.field_height}}, {{sizes.timeline_slot_width + sizes.timeline_spacing}} * i + {{sizes.timeline_left}}, word))
+                     }
+                  }
+               }
                return ret
             },
             init_node: (box, label) => {

@@ -1,5 +1,7 @@
 {% filter indent(width=indent) %}
 $register_value[{{register_size-1}}:0] = {{concat_fields}};
+{% for word in words %}{%- if concat_load_next[word] %}$register_load_next{{word}} = {{concat_load_next[word]}};{%- endif %}
+{% endfor %}
 \viz_js
    box: {strokeWidth: 0},
    init() {
@@ -24,8 +26,13 @@ $register_value[{{register_size-1}}:0] = {{concat_fields}};
    },
    render() {
       let obj = this.getObjects()
-      obj.label.set({fill: "black", text: "{{name}}"})
-      obj.value.set({fill: "black", text: "{{register_size}}''h" + '$register_value'.asHexStr()})
+      let load_nexts = []
+      let fields = {{fields_slot}}
+      {% for word in words %}load_nexts.push('$register_load_next{{word}}')
+      {% endfor %}let action_signals = []
+      action_signals.push(this.sigVal(`{{module_name}}.cpuif_req`).step(-1))
+      action_signals.push(this.sigVal(`{{module_name}}.decoded_req_is_wr`).step(-1))
+      return '/top_viz'.render_register(obj, "{{name}}", {{register_size}}, '$register_value'.asHexStr(), {{words[-1]+1}}, load_nexts, fields, action_signals)
    },
    where: {left: {{left}}, top: {{top}}}
 {% endfilter %}
