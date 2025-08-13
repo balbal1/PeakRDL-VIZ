@@ -56,7 +56,8 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: dist
-          path: dist
+          user: __token__
+          password: ${{ secrets.PYPI_API_TOKEN }}
+          attestations: false
 
       - uses: pypa/gh-action-pypi-publish@release/v1
