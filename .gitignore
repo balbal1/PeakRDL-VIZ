@@ -3,3 +3,4 @@ dist
 *.egg-info
 output_files
 dev.toml
+build
