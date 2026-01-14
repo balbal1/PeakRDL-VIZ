@@ -7,8 +7,8 @@ from systemrdl.node import AddrmapNode, MemNode
 from systemrdl.node import RegNode, RegfileNode, FieldNode
 from systemrdl import RDLWalker
 
+from .Constants import Constants
 from .generator import GenerateFieldsVIZ
-from .design_sizer import DesignSizer
 
 class VIZExporter:
 
@@ -27,8 +27,9 @@ class VIZExporter:
         sv_module: str = kwargs.pop("sv_module", None)
         sv_package: str = kwargs.pop("sv_package", None)
         tlv_flag: bool = kwargs.pop("tlv_flag", False)
+        root_path: bool = kwargs.pop("root_path", None)
 
-        module_name: str = node.inst_name
+        module_name: str = ""
         module_content: str = ""
         package_content: str = ""
 
@@ -54,19 +55,22 @@ class VIZExporter:
                     with open(sv_package, "r") as f:
                         package_content = f.read()
                 except FileNotFoundError:
-                    node.env.msg.fatal("couldn't find SystemVerilog package file automatically, please specify the path using --sv-package.")
-        
+                    node.env.msg.fatal("Couldn't find SystemVerilog package file automatically, please specify the path using --sv-package.")
+            module_name = node.inst_name
+        else:
+            if root_path:
+                module_name = root_path
+
         walker = RDLWalker(unroll=True)
         
-        design_sizer = DesignSizer(node, module_name)
-        generate_listener = GenerateFieldsVIZ(design_sizer)
+        generate_listener = GenerateFieldsVIZ(node, module_name, sv_module)
         walker.walk(node, generate_listener)
 
         context = {
             "module_name": module_name,
-            "access_width": design_sizer.access_width,
+            "access_width": generate_listener.access_width,
             "viz_code": generate_listener,
-            "sizes": generate_listener.design_sizer.sizes,
+            "sizes": Constants,
             "module_content": module_content,
             "package_content": package_content,
         }

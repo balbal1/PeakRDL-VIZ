@@ -33,6 +33,13 @@ class Exporter(ExporterSubcommandPlugin):
             help="export TL-Verilog module with output"
         )
 
+        arg_group.add_argument(
+            "--root",
+            metavar="NAME",
+            default=None,
+            help="Root path to the CSR design in vcd file"
+        )
+
     def do_export(self, top_node: 'AddrmapNode', options: 'argparse.Namespace') -> None:
         x = VIZExporter()
         x.export(
@@ -40,5 +47,6 @@ class Exporter(ExporterSubcommandPlugin):
             options.output,
             sv_module = options.sv_module,
             sv_package = options.sv_package,
-            tlv_flag = options.tlv
+            tlv_flag = options.tlv,
+            root_path = options.root
         )

@@ -15,7 +15,7 @@ class DesignScanner(RDLListener):
         access_width = node.get_property('accesswidth')
         self.access_width = max(self.access_width, access_width)
         self.max_address = node.raw_address_offset
-        if not self.base_address:
+        if self.base_address is None:
             self.base_address = node.raw_absolute_address
 
     def enter_Component(self, node):
@@ -28,4 +28,8 @@ class DesignScanner(RDLListener):
         self.depth -= 1
 
     def get_address_space(self):
-        return int(math.log2(self.max_address))
+        try:
+            return int(math.log2(self.max_address))
+        except ValueError:
+            return 0
+        
